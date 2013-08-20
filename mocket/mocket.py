@@ -78,9 +78,10 @@ class MocketSocket(object):
         entry = Mocket.get_entry(self._host, self._port, data)
         if not entry:
             return self.true_sendall(data, *args, **kwargs)
-        entry.collect(data)
+        resp = entry.get_response(data)
+        entry.collect(data, resp)
         self.fd.seek(0)
-        self.fd.write(entry.get_response())
+        self.fd.write(resp)
         self.fd.seek(0)
 
     def true_sendall(self, data, *args, **kwargs):
@@ -176,7 +177,7 @@ class MocketEntry(object):
     def collect(self, request, response):
         req = self.request_cls(request)
         resp = self.response_cls(response)
-        Mocket.collect(self.location, req, response)
+        Mocket.collect(self.location, req, resp)
 
     def get_response(self, request=None):
         response = self.responses[self.response_index]
