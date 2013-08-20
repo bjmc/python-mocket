@@ -126,8 +126,8 @@ class Mocket(object):
         cls._record = []
 
     @classmethod
-    def get_records(cls):
-        return cls._records
+    def get_record(cls):
+        return cls._record
 
     @classmethod
     def last_request(cls):

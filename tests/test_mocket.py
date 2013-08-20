@@ -13,6 +13,10 @@ class MocketTestCase(TestCase):
         Mocket._record.extend([(1, 2, 3), (4, 5, 6), (7, 8, 9)])
         self.assertEqual(Mocket.last_request(), 8)
 
+    def test_get_record(self):
+        Mocket._record.extend([(1, 2, 3), (4, 5, 6)])
+        self.assertEqual(Mocket.get_record(), [(1, 2, 3), (4, 5, 6)])
+
     def test_reset(self):
         Mocket._record.extend([1, 2, 3])
         self.assertEqual(Mocket._record, [1, 2, 3])
