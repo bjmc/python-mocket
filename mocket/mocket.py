@@ -2,9 +2,11 @@
 from __future__ import unicode_literals
 import functools
 import socket
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from io import BytesIO
 
+Exchange = namedtuple('Exchange', ('address', 'request', 'response'))
+Address = namedtuple('Address', ('host', 'port'))
 
 __all__ = (
     'true_socket',
@@ -58,7 +60,8 @@ class MocketSocket(object):
         self.timeout = timeout
 
     def connect(self, address):
-        self._address = (self._host, self._port) = address
+        self._host, self._port = address
+        self._address = Address(self._host, self._port)
         self._closed = False
 
     def close(self):
@@ -91,13 +94,14 @@ class MocketSocket(object):
                 self.fd.write(recv)
             except socket.error:
                 break
+        Mocket.collect(self._address, data, self.fd.getvalue())
         self.fd.seek(0)
         self.true_socket.close()
 
 
 class Mocket(object):
     _entries = defaultdict(list)
-    _requests = []
+    _record = []
 
     @classmethod
     def register(cls, *entries):
@@ -112,23 +116,27 @@ class Mocket(object):
                 return entry
 
     @classmethod
-    def collect(cls, data):
-        cls._requests.append(data)
+    def collect(cls, address, request, response):
+        cls._record.append(Exchange(address, request, response))
 
     @classmethod
     def reset(cls):
         cls._entries = defaultdict(list)
-        cls._requests = []
+        cls._record = []
+
+    @classmethod
+    def get_records(cls):
+        return cls._records
 
     @classmethod
     def last_request(cls):
         if cls._requests:
-            return cls._requests[-1]
+            return cls._record[-1][1]
 
     @classmethod
     def remove_last_request(cls):
-        if cls._requests:
-            del cls._requests[-1]
+        if cls._record:
+            del cls._record[-1]
 
     @staticmethod
     def enable():
@@ -165,11 +173,12 @@ class MocketEntry(object):
     def can_handle(self, data):
         return True
 
-    def collect(self, data):
-        req = self.request_cls(data)
-        Mocket.collect(req)
+    def collect(self, request, response):
+        req = self.request_cls(request)
+        resp = self.response_cls(response)
+        Mocket.collect(self.location, req, response)
 
-    def get_response(self):
+    def get_response(self, request=None):
         response = self.responses[self.response_index]
         if self.response_index < len(self.responses) - 1:
             self.response_index += 1
