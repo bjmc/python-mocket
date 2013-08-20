@@ -62,9 +62,9 @@ class Entry(MocketEntry):
         self.method = method.upper()
         self._sent_data = b''
 
-    def collect(self, data):
-        self._sent_data += data
-        return super(Entry, self).collect(self._sent_data)
+    def collect(self, sent_data, returned_data):
+        self._sent_data += sent_data
+        return super(Entry, self).collect(self._sent_data, returned_data)
 
     def can_handle(self, data):
         try:

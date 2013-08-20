@@ -131,7 +131,7 @@ class Mocket(object):
 
     @classmethod
     def last_request(cls):
-        if cls._requests:
+        if cls._record:
             return cls._record[-1][1]
 
     @classmethod

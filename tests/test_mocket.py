@@ -10,14 +10,14 @@ class MocketTestCase(TestCase):
 
     def test_lastrequest(self):
         self.assertEqual(Mocket.last_request(), None)
-        Mocket._requests.extend([1, 2, 3])
-        self.assertEqual(Mocket.last_request(), 3)
+        Mocket._record.extend([(1, 2, 3), (4, 5, 6), (7, 8, 9)])
+        self.assertEqual(Mocket.last_request(), 8)
 
     def test_reset(self):
-        Mocket._requests.extend([1, 2, 3])
-        self.assertEqual(Mocket._requests, [1, 2, 3])
+        Mocket._record.extend([1, 2, 3])
+        self.assertEqual(Mocket._record, [1, 2, 3])
         Mocket.reset()
-        self.assertEqual(Mocket._requests, [])
+        self.assertEqual(Mocket._record, [])
 
     def test_gethostname(self):
         hostname = socket.gethostname()
@@ -45,18 +45,20 @@ class MocketTestCase(TestCase):
 
     def test_collect(self):
         request = 'GET /get/p/?b=2&a=1 HTTP/1.1\r\nAccept-Encoding: identity\r\nHost: testme.org\r\nConnection: close\r\nUser-Agent: Python-urllib/2.6\r\n\r\n'
-        Mocket.collect(request)
+        response = "HTTP/1.1 301 Moved Permanently\r\n"
+        address = ('testme.org', 80)
+        Mocket.collect(address, request, response)
         self.assertEqual(Mocket.last_request(), request)
-        self.assertEqual(Mocket._requests, [request])
+        self.assertEqual(Mocket._record, [(address, request, response)])
 
     def test_remove_last(self):
-        Mocket._requests = [1, 2]
+        Mocket._record = [1, 2]
         Mocket.remove_last_request()
-        self.assertEqual(Mocket._requests, [1])
+        self.assertEqual(Mocket._record, [1])
 
     def test_remove_last_empty(self):
         Mocket.remove_last_request()
-        self.assertEqual(Mocket._requests, [])
+        self.assertEqual(Mocket._record, [])
 
     def test_getentry(self):
         entry = MocketEntry(('localhost', 80), True)
