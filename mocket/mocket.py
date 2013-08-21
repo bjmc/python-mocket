@@ -23,13 +23,14 @@ __all__ = (
 )
 
 true_socket = socket.socket
+socket_class = socket._socket.socket
 true_create_connection = socket.create_connection
 true_gethostbyname = socket.gethostbyname
 true_gethostname = socket.gethostname
 true_getaddrinfo = socket.getaddrinfo
 gethostbyname = lambda host: host
 gethostname = lambda: 'localhost'
-getaddrinfo = lambda host, port, **kwargs: [(2, 1, 6, '', (host, port))]
+getaddrinfo = lambda host, port, **kwargs: [(2, 1, 6, '', (host, poonrt))]
 
 
 def create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, sender_address=None):
@@ -40,14 +41,27 @@ def create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, sender_ad
     return s
 
 
-class MocketSocket(object):
+class MocketSocket(socket_class, object):
+    # Override a bunch of read-only properties
+    family = None
+    type = None
+    proto = None
+    timeout = None
+
     def __init__(self, family, type, proto=0):
+        self._sock = self
         self.setsockopt(family, type, proto)
         self.settimeout(socket._GLOBAL_DEFAULT_TIMEOUT)
         self.true_socket = true_socket(family, type, proto)
         self.fd = BytesIO()
+        self._sent_data = BytesIO()
         self._closed = True
-        self._sock = self
+
+    def __repr__(self):
+        return super(MocketSocket, self).__repr__().replace('socket', 'MocketSocket')
+
+    def getpeername(self):
+        return self._address
 
     def setsockopt(self, family, type, protocol):
         self.family = family
@@ -70,6 +84,26 @@ class MocketSocket(object):
         self._mode = mode
         self._bufsize = bufsize
         return self.fd
+
+    def recv(self, bufsize, flags=0):
+        return self.fd.read(bufsize)
+
+    def recvfrom(self, bufsize, flags=0):
+        return self.fd.read(bufsize), self._address
+
+    def recv_into(self, buf, nbytes=-1, flags=0):
+        buf.write(self.fd.read(nbytes))
+        return self.fd.tell()
+
+    def recvfrom_into(self, buf, nbytes=-1, flags=0):
+        return self.recvfrom_into(buf, nbytes, flags), self._address
+
+    def send(self, data):
+        self._sent_data.write(data)
+
+    def sendto(self, data):
+        self._sent_data.write(data)
+        return
 
     def sendall(self, data, *args, **kwargs):
         entry = Mocket.get_entry(self._host, self._port, data)
